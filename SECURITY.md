@@ -68,11 +68,14 @@ Save. GitHub entrega una dirección del tipo
 `https://usuario.github.io/nombre-del-repo/` con HTTPS automático e
 incluido, sin comprar dominio ni certificado.
 
-## Nota sobre los documentos subidos en el registro (registro.html)
-El formulario de registro de enfermero pide fotos del título profesional y
-de antecedentes penales. Hoy esas imágenes se guardan en el propio
-navegador (localStorage), no en GitHub ni en ningún servidor — pero por
-seguridad, **nunca subas al repositorio ni pruebes el formulario con
+## Nota sobre las fotos y documentos del registro (registro.html)
+El formulario de ambos roles solicita el frente y reverso del DUI, además
+de una foto de perfil; el formulario de enfermero también permite adjuntar
+el título profesional y los antecedentes penales. Los archivos de imagen se
+redimensionan y comprimen en el navegador, y los PDF se leen como base64.
+Después, estos datos —incluidos número de DUI y `profilePhoto`— se guardan
+en el propio navegador (`localStorage`), no en GitHub ni en un servidor.
+Por seguridad, **nunca subas al repositorio ni pruebes el formulario con
 documentos reales de una persona real** mientras esto siga siendo un
 prototipo sin backend.
 

@@ -8,6 +8,8 @@
    los datos viven solo en el navegador de quien lo usa.
    ========================================================================= */
 
+const WHATSAPP_NUMBER = "50370668454";
+
 /* =====================================================================
    DISUASIÓN DE INSPECCIÓN (NO ES SEGURIDAD REAL)
    Esto NO protege el código: cualquier persona con conocimientos básicos
@@ -82,14 +84,16 @@ function loadJSON(key, fallback){
     return JSON.parse(raw);
   }catch(e){ return fallback; }
 }
+let lastStorageError = null;
 function saveJSON(key, value){
-  try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){ /* almacenamiento no disponible */ }
+  try{ localStorage.setItem(key, JSON.stringify(value)); lastStorageError = null; return true; }
+  catch(e){ lastStorageError = e; console.error(`No se pudo guardar "${key}" en el almacenamiento local.`, e); return false; }
 }
 
 function getUsers(){ return loadJSON(LS_KEYS.users, DEFAULT_USERS); }
-function saveUsers(users){ saveJSON(LS_KEYS.users, users); }
+function saveUsers(users){ return saveJSON(LS_KEYS.users, users); }
 function getCurrentUser(){ return loadJSON(LS_KEYS.currentUser, null); }
-function setCurrentUser(user){ saveJSON(LS_KEYS.currentUser, user); }
+function setCurrentUser(user){ return saveJSON(LS_KEYS.currentUser, user); }
 function clearCurrentUser(){ localStorage.removeItem(LS_KEYS.currentUser); }
 function getPostings(){ return loadJSON(LS_KEYS.postings, DEFAULT_POSTINGS); }
 function savePostings(p){ saveJSON(LS_KEYS.postings, p); }
@@ -160,8 +164,94 @@ function scrollToId(id){
 function scrollToHashOnLoad(){
   if(window.location.hash){
     const id = window.location.hash.slice(1);
-    setTimeout(() => document.getElementById(id)?.scrollIntoView({behavior:'smooth'}), 60);
+    setTimeout(() => {
+      const target = document.getElementById(id);
+      if(target) window.scrollTo({top:target.getBoundingClientRect().top + window.scrollY - 92,behavior:'smooth'});
+    }, 60);
   }
+}
+function toggleMainMenu(force){
+  const nav = document.querySelector('.main-topbar');
+  const toggle = nav && nav.querySelector('.menu-toggle');
+  if(!nav || !toggle) return;
+  const expanded = force === undefined ? toggle.getAttribute('aria-expanded') !== 'true' : Boolean(force);
+  nav.classList.toggle('menu-open', expanded);
+  toggle.setAttribute('aria-expanded', String(expanded));
+  toggle.setAttribute('aria-label', expanded ? 'Cerrar menú' : 'Abrir menú');
+}
+
+function initRulesCardReveal(){
+  const grid = document.querySelector('.rules-grid');
+  if(!grid) return;
+  const cards = grid.querySelectorAll('[data-rules-reveal]');
+  if(!cards.length) return;
+  if(!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    cards.forEach(card => card.classList.add('is-visible'));
+    return;
+  }
+  grid.classList.add('is-observing');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  },{threshold:0.12,rootMargin:'0px 0px -32px 0px'});
+  cards.forEach(card => observer.observe(card));
+}
+
+function initWhatsAppWidget(){
+  if(document.querySelector('.whatsapp-widget')) return;
+  const widget = document.createElement('div');
+  widget.className = 'whatsapp-widget';
+  widget.dataset.pulse = 'true';
+  const message = 'Hola Curandis, tengo una duda sobre cómo funciona la plataforma';
+  const chatUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  widget.innerHTML = `
+    <section class="whatsapp-panel" id="whatsapp-panel" role="dialog" aria-modal="false" aria-labelledby="whatsapp-panel-title" aria-describedby="whatsapp-panel-message" tabindex="-1" hidden>
+      <div class="whatsapp-panel-header">
+        <h2 class="whatsapp-panel-title" id="whatsapp-panel-title">Curandis · Resolvemos tus dudas</h2>
+        <button class="whatsapp-panel-close" type="button" aria-label="Cerrar chat de WhatsApp">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m18 6-12 12M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="whatsapp-panel-body">
+        <p class="whatsapp-panel-message" id="whatsapp-panel-message">Hola 👋 ¿Tienes dudas sobre cómo funciona Curandis? Escríbenos por WhatsApp y te respondemos.</p>
+        <a class="whatsapp-chat-link" href="${chatUrl}" target="_blank" rel="noopener noreferrer">Chatear por WhatsApp</a>
+      </div>
+    </section>
+    <button class="whatsapp-toggle" type="button" aria-label="Abrir chat de WhatsApp" aria-expanded="false" aria-controls="whatsapp-panel">
+      <svg aria-hidden="true" viewBox="0 0 32 32"><path d="M16 3.1A12.8 12.8 0 0 0 5 22.5L3.3 28.7l6.4-1.7A12.9 12.9 0 1 0 16 3.1Zm0 23.4c-2 0-3.9-.5-5.6-1.6l-.4-.2-3.8 1 1-3.7-.3-.4A10.2 10.2 0 1 1 16 26.5Zm5.6-7.6c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.4.4-.6.1-.2 0-.5 0-.7l-1-2.3c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4s-1.1 1.1-1.1 2.7 1.2 3.1 1.4 3.3c.2.2 2.2 3.4 5.4 4.7.8.3 1.4.5 1.9.6.8.3 1.5.2 2 .1.6-.1 1.9-.8 2.2-1.6.3-.8.3-1.5.2-1.6-.1-.2-.3-.3-.6-.4Z"/></svg>
+    </button>`;
+  document.body.appendChild(widget);
+  const toggle = widget.querySelector('.whatsapp-toggle');
+  const panel = widget.querySelector('.whatsapp-panel');
+  const close = widget.querySelector('.whatsapp-panel-close');
+  const chatLink = widget.querySelector('.whatsapp-chat-link');
+  function setOpen(open,{restoreFocus=false}={}){
+    panel.hidden = !open;
+    toggle.setAttribute('aria-expanded',String(open));
+    toggle.setAttribute('aria-label',open ? 'Cerrar chat de WhatsApp' : 'Abrir chat de WhatsApp');
+    if(open){
+      widget.removeAttribute('data-pulse');
+      close.focus();
+    }else if(restoreFocus){
+      toggle.focus();
+    }
+  }
+  toggle.addEventListener('click',() => setOpen(panel.hidden));
+  close.addEventListener('click',() => setOpen(false,{restoreFocus:true}));
+  document.addEventListener('pointerdown',event => {
+    if(!panel.hidden && !widget.contains(event.target)) setOpen(false);
+  });
+  document.addEventListener('keydown',event => {
+    if(event.key === 'Escape' && !panel.hidden){
+      event.preventDefault();
+      setOpen(false,{restoreFocus:true});
+    }
+  });
+  chatLink.addEventListener('click',() => setOpen(false,{restoreFocus:true}));
 }
 
 function enterFlow(role){
@@ -243,6 +333,8 @@ function updateNavUser(){
   if(!guest || !user) return;
   guest.style.display = currentUser ? 'none' : 'inline-flex';
   user.style.display = currentUser ? 'inline-flex' : 'none';
+  const register = document.querySelector('.main-topbar .nav-register');
+  if(register) register.style.display = currentUser ? 'none' : 'inline-flex';
   if(currentUser){
     document.getElementById('nav-avatar').textContent = initials(currentUser.name);
     document.getElementById('nav-name').textContent = currentUser.name.split(' ')[0];
@@ -321,27 +413,228 @@ function wizardNext(){
   const email = document.getElementById('w-email').value.trim();
   const telefono = document.getElementById('w-telefono').value.trim();
   const err = document.getElementById('wiz-error-1');
-  if(!nombre || !apellidos || !email || !telefono){ err.classList.add('show'); return; }
+  const identityValid = validateIdentityUploads();
+  const emailValid = document.getElementById('w-email').checkValidity();
+  if(!nombre || !apellidos || !emailValid || !telefono || !identityValid){
+    err.textContent = !identityValid
+      ? 'Completa tus datos y agrega las tres fotos de identidad para continuar.'
+      : 'Completa nombre, apellidos y teléfono; revisa que el correo tenga un formato válido.';
+    err.classList.add('show');
+    return;
+  }
   err.classList.remove('show');
   wizardStep = 1; showWizardStep();
 }
 function wizardPrev(){ wizardStep = 0; showWizardStep(); }
-/* ⚠ AVISO IMPORTANTE: estas fotos (título profesional y antecedentes
-   penales) se convierten a texto (base64) y se guardan sin cifrar dentro
-   de localStorage, junto con el resto del usuario. Son documentos de
-   identidad reales y sensibles. Mientras el proyecto sea una demo/tarea,
-   NO subas documentos reales de nadie para probar este formulario — usa
-   cualquier imagen de ejemplo. Antes de manejar documentos reales, esto
-   DEBE subirse a almacenamiento cifrado del lado del servidor (Firebase
-   Storage / Supabase Storage con reglas de acceso), nunca al navegador. */
+/* Las imágenes de identidad se reducen en el navegador antes de guardarse
+   en localStorage. Esto sigue siendo solo una demo: no subir documentos reales. */
 function readFileAsDataURL(file){
   if(!file) return Promise.resolve('');
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result || '');
-    reader.onerror = () => resolve('');
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
     reader.readAsDataURL(file);
   });
+}
+const registrationUploads = Object.create(null);
+const uploadDefinitions = {
+  'w-dui-front':{required:true,maxSide:1000},
+  'w-dui-back':{required:true,maxSide:1000},
+  'w-profile-photo':{required:true,maxSide:600},
+  'w-title-photo':{required:false,maxSide:1000,documents:true},
+  'w-criminal-photo':{required:false,maxSide:1000,documents:true},
+};
+const uploadMaxBytes = 5 * 1024 * 1024;
+
+function compressRegistrationImage(file, maxSide){
+  return readFileAsDataURL(file).then(source => new Promise((resolve,reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(image.naturalWidth,image.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1,Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1,Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext('2d');
+      if(!context){ reject(new Error('No se pudo procesar la imagen.')); return; }
+      context.fillStyle = '#fff';
+      context.fillRect(0,0,canvas.width,canvas.height);
+      context.drawImage(image,0,0,canvas.width,canvas.height);
+      resolve(canvas.toDataURL('image/jpeg',0.7));
+    };
+    image.onerror = () => reject(new Error('El archivo no es una imagen válida.'));
+    image.src = source;
+  }));
+}
+function uploadError(id, message){
+  const error = document.getElementById(`${id}-error`);
+  const input = document.getElementById(id);
+  if(error){ error.textContent = message; error.classList.toggle('show',Boolean(message)); }
+  if(input) input.setAttribute('aria-invalid',String(Boolean(message)));
+}
+function renderUploadPreview(id){
+  const preview = document.getElementById(`${id}-preview`);
+  const prompt = document.querySelector(`label[for="${id}"] .upload-prompt`);
+  if(!preview) return;
+  preview.replaceChildren();
+  const item = registrationUploads[id];
+  if(!item){
+    if(prompt) prompt.textContent = 'Toca para subir o toma una foto';
+    preview.classList.remove('has-file');
+    return;
+  }
+  if(prompt) prompt.textContent = 'Toca para cambiar el archivo';
+  preview.classList.add('has-file');
+  const row = document.createElement('div');
+  row.className = 'upload-preview-row';
+  if(item.type === 'application/pdf'){
+    const link = document.createElement('a');
+    link.href = item.data;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = `Ver PDF: ${item.name}`;
+    row.appendChild(link);
+  }else{
+    const image = document.createElement('img');
+    image.src = item.data;
+    image.alt = id === 'w-profile-photo' ? 'Vista previa de foto de perfil' : `Vista previa de ${item.name}`;
+    row.appendChild(image);
+    const name = document.createElement('span');
+    name.textContent = item.name;
+    row.appendChild(name);
+  }
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'upload-remove';
+  remove.textContent = 'Quitar';
+  remove.setAttribute('aria-label',`Quitar ${item.name}`);
+  remove.addEventListener('click',() => clearRegistrationUpload(id));
+  row.appendChild(remove);
+  preview.appendChild(row);
+}
+function clearRegistrationUpload(id){
+  delete registrationUploads[id];
+  const input = document.getElementById(id);
+  if(input) input.value = '';
+  uploadError(id,'');
+  renderUploadPreview(id);
+}
+async function handleRegistrationUpload(input){
+  const file = input.files && input.files[0];
+  const id = input.id;
+  if(!file){ clearRegistrationUpload(id); return; }
+  const config = uploadDefinitions[id];
+  const allowedTypes = config.documents
+    ? ['image/jpeg','image/png','image/webp','application/pdf']
+    : ['image/jpeg','image/png','image/webp'];
+  if(!allowedTypes.includes(file.type)){
+    clearRegistrationUpload(id);
+    uploadError(id,config.documents ? 'Formato no válido. Usa JPG, PNG, WebP o PDF.' : 'Formato no válido. Usa una imagen JPG, PNG o WebP.');
+    return;
+  }
+  if(file.size > uploadMaxBytes){
+    clearRegistrationUpload(id);
+    uploadError(id,'El archivo supera el máximo de 5 MB. Elige uno más pequeño.');
+    return;
+  }
+  uploadError(id,'');
+  input.disabled = true;
+  try{
+    const data = file.type === 'application/pdf'
+      ? await readFileAsDataURL(file)
+      : await compressRegistrationImage(file,config.maxSide);
+    registrationUploads[id] = {data,name:file.name,type:file.type === 'application/pdf' ? file.type : 'image/jpeg'};
+    renderUploadPreview(id);
+  }catch(error){
+    clearRegistrationUpload(id);
+    uploadError(id,'No pudimos procesar este archivo. Prueba con otra imagen o PDF.');
+    console.error(`Error al procesar el archivo ${id}.`,error);
+  }finally{
+    input.disabled = false;
+  }
+}
+function initRegistrationUploads(){
+  Object.keys(uploadDefinitions).forEach(id => {
+    const input = document.getElementById(id);
+    if(input) input.addEventListener('change',() => handleRegistrationUpload(input));
+  });
+}
+function validateIdentityUploads(){
+  let valid = true;
+  Object.entries(uploadDefinitions).filter(([,config]) => config.required).forEach(([id]) => {
+    const present = Boolean(registrationUploads[id]);
+    uploadError(id,present ? '' : 'Este archivo es obligatorio para continuar.');
+    if(!present) valid = false;
+  });
+  return valid;
+}
+function passwordIsValid(value){
+  return value.length >= 8 && /[A-Z]/.test(value) && /[a-z]/.test(value) && /\d/.test(value);
+}
+function updatePasswordFeedback(passwordId,confirmId){
+  const password = document.getElementById(passwordId);
+  const confirm = document.getElementById(confirmId);
+  const rules = document.getElementById(`${passwordId}-rules`);
+  const strength = document.getElementById(`${passwordId}-strength`);
+  const value = password.value;
+  const matches = {
+    length:value.length >= 8,
+    upper:/[A-Z]/.test(value),
+    lower:/[a-z]/.test(value),
+    number:/\d/.test(value),
+  };
+  if(rules){
+    rules.querySelectorAll('[data-rule]').forEach(item => {
+      const met = matches[item.dataset.rule];
+      item.classList.toggle('ok',met);
+      item.querySelector('span').textContent = met ? '✓' : '○';
+    });
+  }
+  const score = Object.values(matches).filter(Boolean).length;
+  if(strength){
+    const bar = strength.querySelector('.strength-track span');
+    const label = strength.querySelector('.strength-label');
+    const status = score === 4 ? 'fuerte' : score >= 2 ? 'media' : 'débil';
+    bar.style.width = `${score * 25}%`;
+    strength.dataset.strength = status;
+    label.textContent = `Fuerza: ${status}`;
+  }
+  password.setAttribute('aria-invalid',String(Boolean(value) && !passwordIsValid(value)));
+  if(confirm){
+    const message = document.getElementById(`${confirmId}-match`);
+    const entered = confirm.value.length > 0;
+    const same = entered && confirm.value === value;
+    message.textContent = !entered ? '' : same ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden';
+    message.classList.toggle('valid',same);
+    message.classList.toggle('invalid',entered && !same);
+    confirm.setAttribute('aria-invalid',String(entered && !same));
+  }
+}
+function initPasswordFields(){
+  [['w-pass','w-pass2'],['w-pass-pro','w-pass2-pro']].forEach(([passwordId,confirmId]) => {
+    const password = document.getElementById(passwordId);
+    const confirm = document.getElementById(confirmId);
+    if(!password || !confirm) return;
+    password.addEventListener('input',() => updatePasswordFeedback(passwordId,confirmId));
+    confirm.addEventListener('input',() => updatePasswordFeedback(passwordId,confirmId));
+    updatePasswordFeedback(passwordId,confirmId);
+  });
+}
+function togglePasswordVisibility(inputId,button){
+  const input = document.getElementById(inputId);
+  const visible = input.type === 'password';
+  input.type = visible ? 'text' : 'password';
+  button.setAttribute('aria-label',visible ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  button.setAttribute('aria-pressed',String(visible));
+}
+function registrationStorageError(errorId,error=lastStorageError){
+  const quotaExceeded = error && (error.name === 'QuotaExceededError' || error.code === 22 || error.code === 1014);
+  const message = quotaExceeded
+    ? 'No hay suficiente espacio disponible en este navegador para guardar tus documentos. Quita archivos o usa imágenes más pequeñas e inténtalo de nuevo.'
+    : 'No se pudieron guardar tus datos en este navegador. Habilita el almacenamiento local e inténtalo de nuevo.';
+  const errorElement = document.getElementById(errorId);
+  errorElement.textContent = message;
+  errorElement.classList.add('show');
 }
 async function notifyAdminOfRegistration(user){
   const fields = [
@@ -421,36 +714,67 @@ async function finishWizard(){
   const apellidos = document.getElementById('w-apellidos').value.trim();
   const email = document.getElementById('w-email').value.trim();
   const telefono = document.getElementById('w-telefono').value.trim();
+  if(!validateIdentityUploads()){
+    wizardStep = 0;
+    showWizardStep();
+    return;
+  }
+  const identityPhotos = {
+    duiNumber:document.getElementById('w-dui').value.trim(),
+    duiFrontPhoto:registrationUploads['w-dui-front'].data,
+    duiBackPhoto:registrationUploads['w-dui-back'].data,
+    profilePhoto:registrationUploads['w-profile-photo'].data,
+  };
   let user;
   if(wizardRole === 'family'){
     const pass = document.getElementById('w-pass').value;
     const pass2 = document.getElementById('w-pass2').value;
     const depto = document.getElementById('w-depto').value;
     const err = document.getElementById('wiz-error-2f');
-    if(!depto || pass.length<6 || pass!==pass2){ err.classList.add('show'); return; }
+    if(!depto || !passwordIsValid(pass) || pass!==pass2){
+      err.textContent = 'Selecciona tu departamento y verifica que la contraseña cumpla los cuatro requisitos y coincida.';
+      err.classList.add('show');
+      return;
+    }
     err.classList.remove('show');
-    user = {email, password:pass, name:nombre+' '+apellidos, role:'family', status:'pending', phone:telefono, zone:depto+', '+document.getElementById('w-municipio').value, radius:document.getElementById('w-radio').value};
+    user = {email, password:pass, name:nombre+' '+apellidos, role:'family', status:'pending', phone:telefono, zone:depto+', '+document.getElementById('w-municipio').value, radius:document.getElementById('w-radio').value,...identityPhotos};
   } else {
     const pass = document.getElementById('w-pass-pro').value;
     const pass2 = document.getElementById('w-pass2-pro').value;
     const jvpe = document.getElementById('w-jvpe').value.trim();
     const err = document.getElementById('wiz-error-2p');
-    if(!jvpe || pass.length<6 || pass!==pass2){ err.classList.add('show'); return; }
+    const specialty = document.getElementById('w-especialidad').value;
+    const depto = document.getElementById('w-depto-pro').value;
+    if(!jvpe || !specialty || !depto || !passwordIsValid(pass) || pass!==pass2){
+      err.textContent = 'Completa tu registro JVPE, especialidad y departamento; la contraseña debe cumplir los cuatro requisitos y coincidir.';
+      err.classList.add('show');
+      return;
+    }
     err.classList.remove('show');
-    const titlePhoto = await readFileAsDataURL(document.getElementById('w-title-photo').files[0]);
-    const criminalRecordPhoto = await readFileAsDataURL(document.getElementById('w-criminal-photo').files[0]);
     user = {email, password:pass, name:nombre+' '+apellidos, role:'professional', phone:telefono, jvpm:jvpe,
-      years:document.getElementById('w-anios').value, specialty:document.getElementById('w-especialidad').value,
-      zone:document.getElementById('w-depto-pro').value+', '+document.getElementById('w-municipio-pro').value,
+      years:document.getElementById('w-anios').value, specialty,
+      zone:depto+', '+document.getElementById('w-municipio-pro').value,
       radius:document.getElementById('w-radio-pro').value, status:'pending',
-      titlePhoto, criminalRecordPhoto};
+      titlePhoto:registrationUploads['w-title-photo']?.data || '',
+      criminalRecordPhoto:registrationUploads['w-criminal-photo']?.data || '',...identityPhotos};
   }
   const users = getUsers();
   user.approvalCode = createApprovalCode();
   users.push(user);
-  saveUsers(users);
+  const storageErrorId = wizardRole === 'family' ? 'wiz-error-2f' : 'wiz-error-2p';
+  if(!saveUsers(users)){
+    registrationStorageError(storageErrorId);
+    return;
+  }
   currentUser = user;
-  setCurrentUser(user);
+  if(!setCurrentUser(user)){
+    const storageError = lastStorageError;
+    users.pop();
+    saveUsers(users);
+    currentUser = null;
+    registrationStorageError(storageErrorId,storageError);
+    return;
+  }
   const emailSent = await notifyAdminOfRegistration(user);
   saveJSON(LS_KEYS.registrationEmailStatus, emailSent ? 'sent' : 'failed');
   routeAfterAuth();
@@ -465,7 +789,7 @@ function tabBarHTML(active){
   return `
     <nav class="app-topbar">
       <div class="app-topbar-inner">
-        <div class="app-greeting"><span class="avatar-dot">${esc(initials(currentUser.name))}</span><div>Buenas tardes,<br><strong>${esc(currentUser.name)}</strong></div></div>
+        <div class="app-topbar-left"><a class="app-brand-logo" href="${PAGES.home}" aria-label="Curandis, ir al inicio"><img src="photos/logo.png" alt=""></a><div class="app-greeting"><span class="avatar-dot">${currentUser.profilePhoto ? `<img src="${esc(currentUser.profilePhoto)}" alt="">` : esc(initials(currentUser.name))}</span><div>Buenas tardes,<br><strong>${esc(currentUser.name)}</strong></div></div></div>
         <div class="app-topbar-right"><span class="role-chip">${roleLabel}</span><a class="logout-link" onclick="logout()">↪ Salir</a></div>
       </div>
       <div class="app-tabs">${tabs.map(t=>`<a class="app-tab ${active===t[1]?'active':''}" href="${PAGES[t[1]]}">${t[0]}</a>`).join('')}</div>
@@ -603,7 +927,12 @@ function renderClientRequests(){
 /* ===================== MI PERFIL (ENFERMERO) — perfil.html ===================== */
 function renderNurseProfile(){
   if(!currentUser) return;
-  document.getElementById('prof-avatar').textContent = initials(currentUser.name);
+  const avatar = document.getElementById('prof-avatar');
+  if(currentUser.profilePhoto){
+    avatar.innerHTML = `<img src="${esc(currentUser.profilePhoto)}" alt="Foto de perfil de ${esc(currentUser.name)}">`;
+  }else{
+    avatar.textContent = initials(currentUser.name);
+  }
   document.getElementById('prof-name').textContent = currentUser.name;
   document.getElementById('prof-specialty').textContent = currentUser.specialty || 'Enfermería General';
   document.getElementById('prof-reg').textContent = '✓ JVPE: ' + (currentUser.jvpm || '001-2025');
@@ -680,4 +1009,12 @@ document.addEventListener('DOMContentLoaded', () => {
   updateNavUser();
   updateRegistrationEmailStatus();
   wireOptionCards();
+  initRegistrationUploads();
+  initPasswordFields();
+  initRulesCardReveal();
+  initWhatsAppWidget();
+  document.querySelectorAll('#main-nav-links a').forEach(link => link.addEventListener('click',() => toggleMainMenu(false)));
+  document.addEventListener('keydown',event => {
+    if(event.key === 'Escape') toggleMainMenu(false);
+  });
 });

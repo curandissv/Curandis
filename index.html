@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<div class="site-accent" aria-hidden="true"></div>
 
 <!-- ============ MODAL LEGAL (aparece solo la primera vez) ============ -->
 <div id="modal-overlay">
@@ -30,19 +31,38 @@
   </div>
 </div>
 
+<nav class="topbar main-topbar">
+  <div class="brand" onclick="scrollToTop()"><img src="photos/logo.png" alt=""><span>Curandis</span></div>
+  <button class="menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="main-nav-links" onclick="toggleMainMenu()"><span></span><span></span><span></span></button>
+  <div class="links" id="main-nav-links">
+    <a onclick="scrollToId('como-funciona')">Cómo funciona</a>
+    <a onclick="scrollToId('impacto')">Impacto social</a>
+    <a href="nosotros.html">Nosotros</a>
+    <span id="nav-guest"><a onclick="openAuth()">Iniciar sesión</a></span>
+    <span id="nav-user" style="display:none;">
+      <span class="user-chip"><span class="avatar" id="nav-avatar">--</span><span id="nav-name">Usuario</span></span>
+      <button class="btn btn-ghost btn-sm" onclick="goToOwnDashboard()">Mi panel</button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Salir</button>
+    </span>
+  </div>
+  <button class="btn btn-primary btn-sm nav-register" onclick="location.href='registro.html'">Registrarse</button>
+</nav>
+
 <!-- ============ BIENVENIDA ============ -->
 <div class="welcome-hero" id="screen-welcome">
   <div class="landing-card">
-    <div class="logo-tile"><img src="photos/logo.png" alt="Curandis"></div>
-    <h1>Curandis</h1>
+    <div class="hero-logo"><img class="hero-logo-image" src="photos/logo.png" alt="Curandis"></div>
+    <h1 class="tagline"></h1>
     <p class="sub">Conectamos familias con enfermeros registrados JVPE para atención profesional en casa.</p>
     <div class="landing-badges">
-      <div class="landing-badge"><div class="lb-icon">🛡️</div><div class="lb-label">JVPE verificado</div></div>
-      <div class="landing-badge"><div class="lb-icon">⭐</div><div class="lb-label">Altamente calificados</div></div>
-      <div class="landing-badge"><div class="lb-icon">👥</div><div class="lb-label">8+ enfermeros</div></div>
+      <div class="landing-badge"><div class="lb-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg></div><div class="lb-label">Enfermeros verificados JVPE</div></div>
+      <div class="landing-badge"><div class="lb-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 14.8 5l3.4-.1.8 3.3 2.3 2.5-1.7 3 .6 3.4-3.2 1.2L14.8 21 12 19l-2.8 2-2.2-2.7-3.2-1.2.6-3.4-1.7-3L5 8.2l.8-3.3 3.4.1L12 3Z"/><path d="m9 12 2 2 4-4"/></svg></div><div class="lb-label">Perfiles revisados</div></div>
+      <div class="landing-badge"><div class="lb-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"/><path d="M5 9v12h14V9M9 21v-7h6v7"/></svg></div><div class="lb-label">Atención a domicilio</div></div>
     </div>
     <button class="btn btn-primary btn-block" onclick="location.href='registro.html'">Crear cuenta gratis →</button>
     <button class="btn btn-ghost btn-block" onclick="openAuth()">Ya tengo cuenta — Ingresar</button>
+    <a class="landing-nurse-link" href="registro.html?role=professional">¿Eres enfermero/a? Regístrate aquí →</a>
+    <p class="landing-privacy"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Registro gratuito · Tus datos están protegidos</p>
     <a class="landing-demo" onclick="watchDemo()">Ver demo con enfermera María Hernández →</a>
     <p class="landing-foot">Curandis · El Salvador</p>
   </div>
@@ -50,24 +70,6 @@
 
 <!-- ============ LANDING PÚBLICO / MARKETING ============ -->
 <div id="screen-dashboard">
-  <nav class="topbar">
-    <div class="brand" onclick="scrollToTop()"><img src="photos/logo.png" alt=""><span>Curandis</span></div>
-    <div class="links">
-      <a onclick="scrollToId('como-funciona')">Cómo funciona</a>
-      <a onclick="scrollToId('impacto')">Impacto social</a>
-      <a href="nosotros.html">Nosotros</a>
-      <span id="nav-guest">
-        <a onclick="openAuth()">Iniciar sesión</a>
-        <button class="btn btn-primary btn-sm" onclick="location.href='registro.html'">Registrarse</button>
-      </span>
-      <span id="nav-user" style="display:none;">
-        <span class="user-chip"><span class="avatar" id="nav-avatar">--</span><span id="nav-name">Usuario</span></span>
-        <button class="btn btn-ghost btn-sm" onclick="goToOwnDashboard()">Mi panel</button>
-        <button class="btn btn-ghost btn-sm" onclick="logout()">Salir</button>
-      </span>
-    </div>
-  </nav>
-
   <div class="hero">
     <span class="eyebrow">Marketplace social de salud y empleo · El Salvador</span>
     <h1>Enfermería a domicilio, validada y a tiempo</h1>
@@ -101,6 +103,34 @@
       <div class="step-item"><div class="num">01</div><h4>Cuéntanos qué necesitas</h4><p>La familia describe al paciente, el tipo de cuidado y la disponibilidad horaria. El profesional se registra con su documentación.</p></div>
       <div class="step-item"><div class="num">02</div><h4>Te conectamos validado</h4><p>Cruzamos la solicitud con profesionales aprobados cuyas competencias coinciden con la necesidad real.</p></div>
       <div class="step-item"><div class="num">03</div><h4>Coordinas el turno</h4><p>Se confirma horario, tarifa por turno, e insumos necesarios. El cuidado empieza en casa, con seguimiento.</p></div>
+    </div>
+    <h3 class="rules-subtitle">Reglas claras desde el inicio</h3>
+    <div class="rules-grid">
+      <article class="rules-card" data-rules-reveal>
+        <div class="rules-icon">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
+        </div>
+        <h4>Reparto justo por cada trabajo</h4>
+        <p>Por cada trabajo, el 75% es para el enfermero o enfermera y el 25% para Curandis, que cubre la verificación, la plataforma y el soporte.</p>
+        <div class="rules-share" role="img" aria-label="Distribución del pago: 75% para el profesional y 25% para Curandis.">
+          <div class="rules-share-bar" aria-hidden="true"><span class="rules-share-professional"></span><span class="rules-share-curandis"></span></div>
+          <div class="rules-share-labels" aria-hidden="true"><span>75% Profesional</span><span>25% Curandis</span></div>
+        </div>
+      </article>
+      <article class="rules-card" data-rules-reveal>
+        <div class="rules-icon">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14l1-5-2-5H6l-2 5 1 5Z"/><path d="M3 12h18M7 17v2m10-2v2"/><circle cx="7.5" cy="14.5" r="1"/><circle cx="16.5" cy="14.5" r="1"/></svg>
+        </div>
+        <h4>Transporte compartido</h4>
+        <p>El contratante cubre el 50% del gasto de transporte del profesional y el otro 50% lo cubre el profesional.</p>
+      </article>
+      <article class="rules-card" data-rules-reveal>
+        <div class="rules-icon">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6m-12 5 2 2 4-4"/></svg>
+        </div>
+        <h4>Documentos vigentes y validados</h4>
+        <p>Todos tus documentos deben estar vigentes y ser válidos. Los validamos antes de que puedas ingresar a la plataforma.</p>
+      </article>
     </div>
   </section>
 
@@ -176,7 +206,22 @@
     <p style="text-align:center;margin-top:14px;"><a class="btn-link" href="nosotros.html">Conoce más sobre nosotros →</a></p>
   </section>
 
-  <footer><p class="mono">CURANDIS © 2026 · El Salvador · Prototipo funcional de demostración.</p></footer>
+  <footer class="site-footer">
+    <div class="site-footer-content">
+      <p class="site-footer-brand mono">CURANDIS © 2026 · El Salvador · Prototipo funcional de demostración.</p>
+      <div class="site-footer-contact" aria-label="Contacto">
+        <h2 class="site-footer-contact-title">Contacto</h2>
+        <a class="contact-link" href="tel:+50370668454">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 3a2 2 0 0 1-.6 1.7L7.7 9.7a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 1.7-.6l3 .5a2 2 0 0 1 1.7 2.6Z"/></svg>
+          <span>+503 7066-8454</span>
+        </a>
+        <a class="contact-link" href="mailto:curandissv@gmail.com">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+          <span>curandissv@gmail.com</span>
+        </a>
+      </div>
+    </div>
+  </footer>
 </div>
 
 <script src="app.js"></script>
